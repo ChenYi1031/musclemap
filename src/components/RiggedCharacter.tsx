@@ -8,9 +8,11 @@ import { STANDING_POSE, getExercisePose, ExercisePose, BoneDelta } from '../data
 // Path to the rigged character (Mixamo-style skeleton)
 const XBOT_PATH = '/models/xbot.glb';
 
-// Model is ~1.8 units tall; muscle model is ~10.7 — scale to match
-const SCALE = 6.0;
-const OFFSET_Y = -5.5;
+// Model renders ~1.55 units tall at scale 1 (skinned-mesh bound). 
+// Calibrated via pixel measurement: scale 2.0 + offset 0.3 centers the
+// character at ~80% of the viewport height (canvas 1536x930, camera z=5).
+const SCALE = 2.0;
+const OFFSET_Y = 0.3;
 
 // Bone local 1 unit = 0.01 world units (root scale 0.01)
 const POS_TO_WORLD = 0.01;
