@@ -9,7 +9,7 @@ import { exercises } from './data/exercises';
 import { calculateHighlights } from './utils/highlights';
 
 function App() {
-  const { selectedExercises, setHighlights, showMuscleInfo } = useStore();
+  const { selectedExercises, setHighlights, showMuscleInfo, previewMode, togglePreviewMode } = useStore();
 
   useEffect(() => {
     const highlights = calculateHighlights(selectedExercises, exercises);
@@ -24,7 +24,20 @@ function App() {
           <h1 className="text-xl font-bold">MuscleMap</h1>
           <span className="text-sm text-slate-400">肌肉图谱</span>
         </div>
-        <ViewToggle />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={togglePreviewMode}
+            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              previewMode
+                ? 'bg-emerald-600 text-white shadow-lg'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {previewMode ? '🎬 动作预览' : '🎬 动作预览'}
+          </button>
+          <ViewToggle />
+        </div>
       </header>
 
       <TrainingTabs />

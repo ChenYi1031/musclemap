@@ -1,8 +1,12 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { HumanModel } from './HumanModel';
+import { RiggedCharacter } from './RiggedCharacter';
+import { useStore } from '../store/useStore';
 
 export function Scene3D() {
+  const previewMode = useStore((s) => s.previewMode);
+
   return (
     <div className="w-full h-full bg-gradient-to-b from-slate-900 to-slate-800">
       <Canvas
@@ -14,7 +18,7 @@ export function Scene3D() {
         <directionalLight position={[-5, 3, -5]} intensity={0.4} />
         <pointLight position={[0, -3, 3]} intensity={0.3} />
 
-        <HumanModel />
+        {previewMode ? <RiggedCharacter /> : <HumanModel />}
 
         <OrbitControls
           enablePan={false}
