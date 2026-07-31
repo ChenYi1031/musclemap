@@ -6,41 +6,13 @@ import { MuscleInfoPanel } from './components/MuscleInfoPanel';
 import { ViewToggle } from './components/ViewToggle';
 import { useStore } from './store/useStore';
 import { exercises } from './data/exercises';
-import { MuscleHighlight } from './types';
+import { calculateHighlights } from './utils/highlights';
 
 function App() {
   const { selectedExercises, setHighlights, showMuscleInfo } = useStore();
 
   useEffect(() => {
-    const highlights: MuscleHighlight[] = [];
-    const muscleLevels = new Map<string, 'primary' | 'secondary' | 'stabilizer'>();
-    const priority = { primary: 3, secondary: 2, stabilizer: 1 };
-
-    selectedExercises.forEach(exerciseId => {
-      const exercise = exercises.find(e => e.id === exerciseId);
-      if (!exercise) return;
-
-      exercise.muscles.primary.forEach(id => {
-        if (!muscleLevels.has(id) || priority[muscleLevels.get(id)!] < priority.primary) {
-          muscleLevels.set(id, 'primary');
-        }
-      });
-      exercise.muscles.secondary.forEach(id => {
-        if (!muscleLevels.has(id) || priority[muscleLevels.get(id)!] < priority.secondary) {
-          muscleLevels.set(id, 'secondary');
-        }
-      });
-      exercise.muscles.stabilizer.forEach(id => {
-        if (!muscleLevels.has(id) || priority[muscleLevels.get(id)!] < priority.stabilizer) {
-          muscleLevels.set(id, 'stabilizer');
-        }
-      });
-    });
-
-    muscleLevels.forEach((level, muscleId) => {
-      highlights.push({ muscleId, level });
-    });
-
+    const highlights = calculateHighlights(selectedExercises, exercises);
     setHighlights(highlights);
   }, [selectedExercises, setHighlights]);
 

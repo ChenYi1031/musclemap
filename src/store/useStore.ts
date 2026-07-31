@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { ViewMode, MuscleHighlight, Muscle } from '../types';
+import { ViewMode, MuscleHighlight, Muscle, TrainingDay } from '../types';
+
+type TrainingDayId = TrainingDay['id'];
 
 interface AppState {
-  selectedDay: 'back-biceps' | 'chest-triceps' | 'legs-core';
-  setSelectedDay: (day: 'back-biceps' | 'chest-triceps' | 'legs-core') => void;
+  selectedDay: TrainingDayId;
+  setSelectedDay: (day: TrainingDayId) => void;
 
   selectedExercises: string[];
   toggleExercise: (exerciseId: string) => void;

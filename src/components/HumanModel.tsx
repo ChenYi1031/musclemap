@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,11 +6,8 @@ import { muscles } from '../data/muscles';
 import { useStore } from '../store/useStore';
 import { Muscle } from '../types';
 
-// Path to the GLB model file - place your model here
+// Path to the GLB model file
 const MODEL_PATH = '/models/human-muscles.glb';
-
-// Preload for performance
-useGLTF.preload(MODEL_PATH);
 
 // Colors for highlight levels
 const COLORS: Record<string, THREE.Color> = {
@@ -18,7 +15,6 @@ const COLORS: Record<string, THREE.Color> = {
   secondary: new THREE.Color('#ED8936'),
   stabilizer: new THREE.Color('#F6AD55'),
   default: new THREE.Color('#C4956A'),
-  inactive: new THREE.Color('#D4A574'),
 };
 
 // Create a lookup map: meshId -> muscle
@@ -88,13 +84,11 @@ function findMuscleForNode(nodeName: string): Muscle | null {
     'pectoralis': 'pectoralis-major',
     'latissimus': 'latissimus-dorsi',
     'trapezius': 'trapezius',
-    'erector': 'erector-spinae',
     'deltoid': 'deltoid-middle',
     'biceps': 'biceps',
     'triceps': 'triceps',
     'forearm': 'forearms',
     'abdominis': 'rectus-abdominis',
-    'oblique': 'obliques',
     'quadriceps': 'quadriceps',
     'hamstring': 'hamstrings',
     'gluteus': 'glutes',
@@ -111,140 +105,6 @@ function findMuscleForNode(nodeName: string): Muscle | null {
   }
 
   return null;
-}
-
-// Fallback procedural model when no GLB is available
-function ProceduralModel() {
-  const groupRef = useRef<THREE.Group>(null);
-  const { viewMode } = useStore();
-
-  useFrame(() => {
-    if (groupRef.current) {
-      const targetRotation = viewMode === 'back' ? Math.PI : 0;
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(
-        groupRef.current.rotation.y,
-        targetRotation,
-        0.05
-      );
-    }
-  });
-
-  const skinColor = '#D4A574';
-  const skinMat = <meshStandardMaterial color={skinColor} roughness={0.7} metalness={0.05} />;
-
-  return (
-    <group ref={groupRef}>
-      {/* Head */}
-      <mesh position={[0, 1.85, 0]}>
-        <sphereGeometry args={[0.18, 24, 24]} />
-        {skinMat}
-      </mesh>
-
-      {/* Neck */}
-      <mesh position={[0, 1.55, 0]}>
-        <cylinderGeometry args={[0.07, 0.09, 0.15, 16]} />
-        {skinMat}
-      </mesh>
-
-      {/* Torso */}
-      <mesh position={[0, 1.2, 0]}>
-        <cylinderGeometry args={[0.28, 0.24, 0.35, 24]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0, 0.85, 0]}>
-        <cylinderGeometry args={[0.24, 0.2, 0.35, 24]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0, 0.5, 0]}>
-        <cylinderGeometry args={[0.2, 0.18, 0.35, 24]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0, 0.2, 0]}>
-        <cylinderGeometry args={[0.22, 0.2, 0.25, 24]} />
-        {skinMat}
-      </mesh>
-
-      {/* Shoulders */}
-      <mesh position={[-0.32, 1.35, 0]} rotation={[0, 0, 0.4]}>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.32, 1.35, 0]} rotation={[0, 0, -0.4]}>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        {skinMat}
-      </mesh>
-
-      {/* Arms */}
-      <mesh position={[-0.38, 1.1, 0]} rotation={[0, 0, 0.25]}>
-        <cylinderGeometry args={[0.07, 0.06, 0.35, 16]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[-0.42, 0.92, 0]} rotation={[0, 0, 0.2]}>
-        <sphereGeometry args={[0.055, 12, 12]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[-0.46, 0.72, 0]} rotation={[0, 0, 0.15]}>
-        <cylinderGeometry args={[0.05, 0.04, 0.35, 16]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[-0.48, 0.52, 0]}>
-        <sphereGeometry args={[0.04, 12, 12]} />
-        {skinMat}
-      </mesh>
-
-      <mesh position={[0.38, 1.1, 0]} rotation={[0, 0, -0.25]}>
-        <cylinderGeometry args={[0.07, 0.06, 0.35, 16]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.42, 0.92, 0]} rotation={[0, 0, -0.2]}>
-        <sphereGeometry args={[0.055, 12, 12]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.46, 0.72, 0]} rotation={[0, 0, -0.15]}>
-        <cylinderGeometry args={[0.05, 0.04, 0.35, 16]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.48, 0.52, 0]}>
-        <sphereGeometry args={[0.04, 12, 12]} />
-        {skinMat}
-      </mesh>
-
-      {/* Legs */}
-      <mesh position={[-0.12, -0.1, 0]}>
-        <cylinderGeometry args={[0.1, 0.08, 0.5, 20]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[-0.12, -0.38, 0]}>
-        <sphereGeometry args={[0.065, 12, 12]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[-0.12, -0.68, 0]}>
-        <cylinderGeometry args={[0.065, 0.05, 0.5, 20]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[-0.12, -0.98, 0.04]}>
-        <boxGeometry args={[0.08, 0.06, 0.14]} />
-        {skinMat}
-      </mesh>
-
-      <mesh position={[0.12, -0.1, 0]}>
-        <cylinderGeometry args={[0.1, 0.08, 0.5, 20]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.12, -0.38, 0]}>
-        <sphereGeometry args={[0.065, 12, 12]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.12, -0.68, 0]}>
-        <cylinderGeometry args={[0.065, 0.05, 0.5, 20]} />
-        {skinMat}
-      </mesh>
-      <mesh position={[0.12, -0.98, 0.04]}>
-        <boxGeometry args={[0.08, 0.06, 0.14]} />
-        {skinMat}
-      </mesh>
-    </group>
-  );
 }
 
 interface MuscleState {
@@ -424,33 +284,28 @@ function LoadedModel({ gltf }: { gltf: any }) {
   );
 }
 
+// Error boundary for GLB load failure
+function GlbErrorFallback() {
+  return (
+    <group>
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[1, 2, 0.5]} />
+        <meshStandardMaterial color="#C4956A" roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 1.5, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial color="#C4956A" roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
 export function HumanModel() {
-  const groupRef = useRef<THREE.Group>(null);
-  const { viewMode } = useStore();
+  // Load GLB model - hooks must be called unconditionally
+  const gltf = useGLTF(MODEL_PATH);
 
-  // Try to load the GLB model
-  let gltf = null;
-  try {
-    gltf = useGLTF(MODEL_PATH);
-  } catch (e) {
-    // Model not found, will use procedural fallback
-  }
-
-  // Rotate model based on view mode (for procedural model)
-  useFrame(() => {
-    if (groupRef.current) {
-      const targetRotation = viewMode === 'back' ? Math.PI : 0;
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(
-        groupRef.current.rotation.y,
-        targetRotation,
-        0.05
-      );
-    }
-  });
-
-  // If no model loaded, use procedural fallback
   if (!gltf) {
-    return <ProceduralModel />;
+    return <GlbErrorFallback />;
   }
 
   return <LoadedModel gltf={gltf} />;
