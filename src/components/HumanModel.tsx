@@ -279,8 +279,15 @@ function LoadedModel({ gltf }: { gltf: any }) {
     motion.lean += (profile.lean - motion.lean) * delta * 3;
     motion.rock += (profile.rock - motion.rock) * delta * 3;
     motion.speed += (profile.speed - motion.speed) * delta * 3;
-    const phase = time * motion.speed * 2.6;
-    const rhythm = 0.5 + 0.5 * Math.sin(phase);
+
+    // Rep cycle with a rest phase: the model moves for the first ~55% of the
+    // cycle (concentric + eccentric), then fully rests. Prevents constant
+    // shaking/jitter when nothing is selected or between reps.
+    const cycle01 = ((time * motion.speed * 2.6) % (Math.PI * 2)) / (Math.PI * 2);
+    const active = cycle01 < 0.55 ? 1 : 0;
+    const repT = Math.min(cycle01 / 0.55, 1);      // 0..1 during the active phase
+    const wave = Math.sin(repT * Math.PI);          // 0 -> 1 -> 0 (one rep)
+    const rhythm = active * wave;                   // 0..1, 0 during rest
 
     if (groupRef.current) {
       // Rotate model based on view mode
@@ -290,10 +297,10 @@ function LoadedModel({ gltf }: { gltf: any }) {
         targetRotation,
         0.05
       );
-      // Exercise motion
-      groupRef.current.position.y = Math.sin(phase) * motion.bob;
-      groupRef.current.rotation.x = Math.sin(phase) * motion.lean;
-      groupRef.current.rotation.z = Math.sin(phase * 0.7 + 1.3) * motion.rock;
+      // Exercise motion (rests fully between reps; idle is completely static)
+      groupRef.current.position.y = -active * wave * motion.bob;
+      groupRef.current.rotation.x = active * wave * motion.lean;
+      groupRef.current.rotation.z = active * Math.sin(repT * Math.PI * 2) * motion.rock;
     }
 
     // Update flex activation targets from highlights
@@ -322,20 +329,20 @@ function LoadedModel({ gltf }: { gltf: any }) {
         effectiveTargetIntensity = 0.3;
       }
 
-      // Pulse effect for primary muscles
+      // Pulse effect for primary muscles — synced to the rep rhythm so the
+      // glow contracts with the movement and rests between reps
       if (highlight === 'primary' && !isHovered && !isSelected) {
-        const pulse = Math.sin(time * 3) * 0.1 + 0.3;
-        effectiveTargetIntensity = pulse;
+        effectiveTargetIntensity = 0.15 + 0.35 * rhythm;
       }
 
       // Smooth color transition
       state.currentColor.lerp(effectiveTargetColor, delta * 5);
       state.currentEmissiveIntensity += (effectiveTargetIntensity - state.currentEmissiveIntensity) * delta * 5;
 
-      // Muscle pump (flex) — thickness pulses in rep rhythm
+      // Muscle pump (flex) — thickness pulses in rep rhythm, relaxes fully between reps
       const flex = flexStateRef.current.get(muscleId);
       const pumpAmount = flex
-        ? flex.current * PUMP_STRENGTH[flex.level] * (0.45 + 0.55 * rhythm)
+        ? flex.current * PUMP_STRENGTH[flex.level] * (0.2 + 0.8 * rhythm)
         : 0;
 
       // Apply to all meshes for this muscle
