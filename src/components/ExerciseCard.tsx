@@ -17,7 +17,7 @@ export function ExerciseCard({ exercise, isSelected }: ExerciseCardProps) {
   return (
     <div
       onClick={() => toggleExercise(exercise.id)}
-      className={`p-4 rounded-xl cursor-pointer transition-all border-2 ${
+      className={`exercise-card p-4 rounded-xl cursor-pointer transition-colors border-2 ${
         isSelected
           ? 'bg-slate-700/80 border-blue-500/50 shadow-lg'
           : 'bg-slate-800/50 border-transparent hover:bg-slate-700/50 hover:border-slate-600'

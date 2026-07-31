@@ -1,8 +1,52 @@
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 import { useStore } from '../store/useStore';
 import { exercises } from '../data/exercises';
 
+gsap.registerPlugin(useGSAP);
+
 export function MuscleInfoPanel() {
   const { selectedMuscle, setShowMuscleInfo, toggleExercise, selectedExercises } = useStore();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closePanelRef = useRef<() => void>(() => setShowMuscleInfo(false));
+
+  useGSAP((context, contextSafe) => {
+    if (!panelRef.current || !contextSafe) return;
+
+    const mm = gsap.matchMedia();
+
+    // Reduced motion: jump straight to final state
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(panelRef.current, { xPercent: 0, autoAlpha: 1 });
+    });
+
+    // Normal: slide in from the right
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo(
+        panelRef.current,
+        { xPercent: 100, autoAlpha: 0 },
+        { xPercent: 0, autoAlpha: 1, duration: 0.4, ease: 'power2.out' }
+      );
+    });
+
+    // Context-safe close handler: animates out, then unmounts
+    closePanelRef.current = contextSafe(() => {
+      if (!panelRef.current) {
+        setShowMuscleInfo(false);
+        return;
+      }
+      gsap.to(panelRef.current, {
+        xPercent: 100,
+        autoAlpha: 0,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete: () => setShowMuscleInfo(false),
+      });
+    });
+
+    return () => mm.revert();
+  }, { scope: panelRef });
 
   if (!selectedMuscle) return null;
 
@@ -13,11 +57,12 @@ export function MuscleInfoPanel() {
   );
 
   return (
-    <div className="fixed right-0 top-14 bottom-10 w-80 bg-slate-800 border-l border-slate-700 p-4 overflow-y-auto shadow-2xl z-50">
+    <div ref={panelRef} className="fixed right-0 top-14 bottom-10 w-80 bg-slate-800 border-l border-slate-700 p-4 overflow-y-auto shadow-2xl z-50">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold">{selectedMuscle.name}</h3>
         <button
-          onClick={() => setShowMuscleInfo(false)}
+          type="button"
+          onClick={() => closePanelRef.current()}
           className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,6 +92,7 @@ export function MuscleInfoPanel() {
             return (
               <button
                 key={exercise.id}
+                type="button"
                 onClick={() => toggleExercise(exercise.id)}
                 className={`w-full p-3 rounded-lg text-left transition-all ${
                   isSelected
