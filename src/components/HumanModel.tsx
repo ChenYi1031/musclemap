@@ -32,24 +32,30 @@ muscles.forEach(muscle => {
 // MUSCLE_FOREARMS, MUSCLE_GLUTE_1/2, MUSCLE_HAM_1/2, MUSCLE_LAT_1/2,
 // MUSCLE_PECS, MUSCLE_QUAD_1/2, MUSCLE_TRAP_1/2, MUSCLE_TRICEPS
 const MESH_NAME_TO_MUSCLE: Record<string, string> = {
+  // Core
   'MUSCLE_ABS': 'rectus-abdominis',
+  // Arm
   'MUSCLE_BICEPS': 'biceps',
+  'MUSCLE_TRICEPS': 'triceps',
+  'MUSCLE_FOREARMS': 'forearms',
+  // Leg
   'MUSCLE_CALF_1': 'calves',
   'MUSCLE_CALF_2': 'calves',
-  'MUSCLE_DELTS': 'deltoid-middle',
-  'MUSCLE_FOREARMS': 'forearms',
   'MUSCLE_GLUTE_1': 'glutes',
   'MUSCLE_GLUTE_2': 'glutes',
   'MUSCLE_HAM_1': 'hamstrings',
   'MUSCLE_HAM_2': 'hamstrings',
-  'MUSCLE_LAT_1': 'latissimus-dorsi',
-  'MUSCLE_LAT_2': 'latissimus-dorsi',
-  'MUSCLE_PECS': 'pectoralis-major',
   'MUSCLE_QUAD_1': 'quadriceps',
   'MUSCLE_QUAD_2': 'quadriceps',
+  // Back
+  'MUSCLE_LAT_1': 'latissimus-dorsi',
+  'MUSCLE_LAT_2': 'latissimus-dorsi',
   'MUSCLE_TRAP_1': 'trapezius',
   'MUSCLE_TRAP_2': 'trapezius',
-  'MUSCLE_TRICEPS': 'triceps',
+  // Chest
+  'MUSCLE_PECS': 'pectoralis-major',
+  // Shoulder
+  'MUSCLE_DELTS': 'deltoid-middle',
 };
 
 // Helper to find muscle from node name
@@ -82,16 +88,27 @@ function findMuscleForNode(nodeName: string): Muscle | null {
   // Try matching by common anatomy naming patterns (fallback)
   const muscleKeywords: Record<string, string> = {
     'pectoralis': 'pectoralis-major',
+    'serratus': 'serratus-anterior',
     'latissimus': 'latissimus-dorsi',
     'trapezius': 'trapezius',
+    'rhomboid': 'rhomboids',
+    'erector': 'erector-spinae',
     'deltoid': 'deltoid-middle',
+    'rotator': 'rotator-cuff',
     'biceps': 'biceps',
     'triceps': 'triceps',
+    'brachialis': 'brachialis',
     'forearm': 'forearms',
     'abdominis': 'rectus-abdominis',
+    'oblique': 'obliques',
+    'transverse': 'transverse-abdominis',
     'quadriceps': 'quadriceps',
     'hamstring': 'hamstrings',
-    'gluteus': 'glutes',
+    'gluteus maximus': 'glutes',
+    'gluteus medius': 'glute-medius',
+    'glute': 'glutes',
+    'adductor': 'adductors',
+    'hip flexor': 'hip-flexors',
     'calf': 'calves',
     'gastrocnemius': 'calves',
     'soleus': 'calves',
