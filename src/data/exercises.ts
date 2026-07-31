@@ -1,0 +1,95 @@
+import { Exercise } from '../types';
+
+export const exercises: Exercise[] = [
+  {
+    id: 'pull-up',
+    name: '引体向上',
+    category: 'back-biceps',
+    icon: '🏋️',
+    muscles: {
+      primary: ['latissimus-dorsi', 'biceps'],
+      secondary: ['trapezius', 'deltoid-middle'],
+      stabilizer: ['rectus-abdominis', 'forearms'],
+    },
+    tips: ['双手正握略宽于肩', '发力时想象用肘部向下拉', '保持核心收紧'],
+    mistakes: ['借力摆动', '耸肩代偿'],
+  },
+  {
+    id: 'cable-curl',
+    name: '钢线弯举',
+    category: 'back-biceps',
+    icon: '💪',
+    muscles: {
+      primary: ['biceps'],
+      secondary: ['forearms'],
+      stabilizer: ['rectus-abdominis'],
+    },
+    tips: ['大臂保持固定', '顶峰收缩1-2秒', '控制离心阶段'],
+    mistakes: ['大臂前后摆动', '速度过快'],
+  },
+  {
+    id: 'bench-press',
+    name: '卧推',
+    category: 'chest-triceps',
+    icon: '🏋️',
+    muscles: {
+      primary: ['pectoralis-major'],
+      secondary: ['deltoid-middle', 'triceps'],
+      stabilizer: ['rectus-abdominis', 'forearms'],
+    },
+    tips: ['肩胛骨后缩下沉', '杠铃下落至胸部中段', '双脚踩实地面'],
+    mistakes: ['杠铃弹胸', '臀部离凳'],
+  },
+  {
+    id: 'y-raise',
+    name: 'Y字侧平举',
+    category: 'chest-triceps',
+    icon: '🙌',
+    muscles: {
+      primary: ['deltoid-middle'],
+      secondary: ['trapezius'],
+      stabilizer: ['rectus-abdominis'],
+    },
+    tips: ['手臂呈Y字形', '肘部微屈', '控制下放速度'],
+    mistakes: ['耸肩代偿', '甩臂借力'],
+  },
+  {
+    id: 'squat',
+    name: '深蹲',
+    category: 'legs-core',
+    icon: '🦵',
+    muscles: {
+      primary: ['quadriceps', 'glutes'],
+      secondary: ['hamstrings'],
+      stabilizer: ['rectus-abdominis', 'calves'],
+    },
+    tips: ['膝盖追踪脚尖方向', '蹲至大腿平行地面', '保持背部挺直'],
+    mistakes: ['膝盖内扣', '脚跟离地'],
+  },
+  {
+    id: 'hanging-leg-raise',
+    name: '悬垂举腿',
+    category: 'legs-core',
+    icon: '🏃',
+    muscles: {
+      primary: ['rectus-abdominis'],
+      secondary: ['quadriceps'],
+      stabilizer: ['forearms'],
+    },
+    tips: ['骨盆后倾启动', '举腿至90度', '缓慢下放'],
+    mistakes: ['惯性摆动', '只屈髋不卷腹'],
+  },
+  {
+    id: 'crunch',
+    name: '卷腹',
+    category: 'legs-core',
+    icon: '🔥',
+    muscles: {
+      primary: ['rectus-abdominis'],
+      secondary: [],
+      stabilizer: [],
+    },
+    tips: ['想象肋骨向骨盆靠近', '下背部贴紧地面', '呼气发力'],
+    mistakes: ['抱头拉脖子', '动作幅度过大'],
+  },
+];
