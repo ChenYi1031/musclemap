@@ -3,8 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { muscles } from '../data/muscles';
+import { getExerciseMotion } from '../data/exerciseMotions';
 import { useStore } from '../store/useStore';
-import { Muscle } from '../types';
+import { Muscle, HighlightLevel } from '../types';
 
 // Path to the GLB model file
 const MODEL_PATH = '/models/human-muscles.glb';
@@ -131,12 +132,29 @@ interface MuscleState {
   currentEmissiveIntensity: number;
 }
 
+// Pump strength per highlight level (muscle flex magnitude)
+const PUMP_STRENGTH: Record<HighlightLevel, number> = {
+  primary: 0.16,
+  secondary: 0.09,
+  stabilizer: 0.05,
+  none: 0,
+};
+
+interface FlexState {
+  current: number; // 0..1 smoothed activation
+  target: number;  // 0 or 1
+  level: HighlightLevel;
+}
+
 function LoadedModel({ gltf }: { gltf: any }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { viewMode, highlights, setSelectedMuscle, selectedMuscle } = useStore();
+  const { viewMode, highlights, setSelectedMuscle, selectedMuscle, selectedExercises } = useStore();
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null);
   const muscleMeshMapRef = useRef<Map<string, THREE.Mesh[]>>(new Map());
   const muscleStateRef = useRef<Map<string, MuscleState>>(new Map());
+  const flexStateRef = useRef<Map<string, FlexState>>(new Map());
+  const flexWrapperByMeshRef = useRef<Map<string, THREE.Group>>(new Map());
+  const motionRef = useRef({ bob: 0, lean: 0, rock: 0, speed: 1 });
   const initializedRef = useRef(false);
 
   const { scene } = gltf;
@@ -144,39 +162,75 @@ function LoadedModel({ gltf }: { gltf: any }) {
   // Initialize muscle mesh map once
   if (!initializedRef.current) {
     const map = new Map<string, THREE.Mesh[]>();
-    
+
+    scene.updateMatrixWorld(true);
+
+    // Phase 1: collect all meshes (do NOT mutate the graph while traversing)
+    const meshNodes: THREE.Mesh[] = [];
     scene.traverse((node: THREE.Object3D) => {
-      if (node instanceof THREE.Mesh) {
-        const muscle = findMuscleForNode(node.name);
-        if (muscle) {
-          // Create a completely new MeshStandardMaterial
-          const newMaterial = new THREE.MeshStandardMaterial({
-            color: COLORS.default,
-            roughness: 0.5,
-            metalness: 0.1,
-            emissive: new THREE.Color('#000000'),
-            emissiveIntensity: 0,
-          });
-          
-          // Replace the material completely
-          node.material = newMaterial;
-          
-          const meshes = map.get(muscle.id) || [];
-          meshes.push(node);
-          map.set(muscle.id, meshes);
-          
-          // Initialize muscle state
-          if (!muscleStateRef.current.has(muscle.id)) {
-            muscleStateRef.current.set(muscle.id, {
-              targetColor: COLORS.default.clone(),
-              currentColor: COLORS.default.clone(),
-              targetEmissiveIntensity: 0,
-              currentEmissiveIntensity: 0,
-            });
-          }
-        }
-      }
+      if (node instanceof THREE.Mesh) meshNodes.push(node);
     });
+
+    // Phase 2: process each mesh
+    for (const node of meshNodes) {
+      const muscle = findMuscleForNode(node.name);
+      if (!muscle) continue;
+
+      // Create a completely new MeshStandardMaterial
+      const newMaterial = new THREE.MeshStandardMaterial({
+        color: COLORS.default,
+        roughness: 0.5,
+        metalness: 0.1,
+        emissive: new THREE.Color('#000000'),
+        emissiveIntensity: 0,
+      });
+
+      // Replace the material completely
+      node.material = newMaterial;
+
+      // Wrap the mesh in a pivot group centered on its bounding box,
+      // so we can "pump" the muscle without displacing it along the body
+      node.geometry.computeBoundingBox();
+      const bb = node.geometry.boundingBox?.clone();
+      if (!bb) continue;
+      const center = new THREE.Vector3();
+      bb.getCenter(center).applyMatrix4(node.matrixWorld);
+      const size = new THREE.Vector3();
+      bb.getSize(size);
+
+      // Never scale the longest axis (the limb axis) — thicken only the
+      // two short axes so the muscle bulges in place instead of sliding.
+      const pumpAxes = { x: 1, y: 1, z: 1 };
+      if (size.x >= size.y && size.x >= size.z) pumpAxes.x = 0;
+      else if (size.y >= size.x && size.y >= size.z) pumpAxes.y = 0;
+      else pumpAxes.z = 0;
+
+      const wrapper = new THREE.Group();
+      wrapper.name = `flex_${node.name}`;
+      wrapper.userData.pumpAxes = pumpAxes;
+      wrapper.position.copy(center);
+      scene.add(wrapper);
+      wrapper.attach(node); // reparent preserving world transform
+
+      flexWrapperByMeshRef.current.set(node.uuid, wrapper);
+
+      const meshes = map.get(muscle.id) || [];
+      meshes.push(node);
+      map.set(muscle.id, meshes);
+
+      // Initialize muscle state
+      if (!muscleStateRef.current.has(muscle.id)) {
+        muscleStateRef.current.set(muscle.id, {
+          targetColor: COLORS.default.clone(),
+          currentColor: COLORS.default.clone(),
+          targetEmissiveIntensity: 0,
+          currentEmissiveIntensity: 0,
+        });
+      }
+      if (!flexStateRef.current.has(muscle.id)) {
+        flexStateRef.current.set(muscle.id, { current: 0, target: 0, level: 'none' });
+      }
+    }
 
     muscleMeshMapRef.current = map;
     initializedRef.current = true;
@@ -208,40 +262,68 @@ function LoadedModel({ gltf }: { gltf: any }) {
     });
   }, [highlights]);
 
-  // Animate color transitions and handle hover/selection
+  // Animate color transitions, muscle pump, and exercise motion
   useFrame((_, delta) => {
     const time = Date.now() * 0.001;
-    
-    // Rotate model based on view mode
+
+    // Build a level lookup (primary > secondary > stabilizer already resolved upstream)
+    const levelFor = new Map<string, HighlightLevel>();
+    highlights.forEach((h) => {
+      if (h.level !== 'none') levelFor.set(h.muscleId, h.level);
+    });
+
+    // Exercise motion profile (whole-body movement)
+    const profile = getExerciseMotion(selectedExercises[0]);
+    const motion = motionRef.current;
+    motion.bob += (profile.bob - motion.bob) * delta * 3;
+    motion.lean += (profile.lean - motion.lean) * delta * 3;
+    motion.rock += (profile.rock - motion.rock) * delta * 3;
+    motion.speed += (profile.speed - motion.speed) * delta * 3;
+    const phase = time * motion.speed * 2.6;
+    const rhythm = 0.5 + 0.5 * Math.sin(phase);
+
     if (groupRef.current) {
+      // Rotate model based on view mode
       const targetRotation = viewMode === 'back' ? Math.PI : 0;
       groupRef.current.rotation.y = THREE.MathUtils.lerp(
         groupRef.current.rotation.y,
         targetRotation,
         0.05
       );
+      // Exercise motion
+      groupRef.current.position.y = Math.sin(phase) * motion.bob;
+      groupRef.current.rotation.x = Math.sin(phase) * motion.lean;
+      groupRef.current.rotation.z = Math.sin(phase * 0.7 + 1.3) * motion.rock;
     }
+
+    // Update flex activation targets from highlights
+    flexStateRef.current.forEach((flex, muscleId) => {
+      const level = levelFor.get(muscleId) ?? 'none';
+      flex.level = level;
+      flex.target = level === 'none' ? 0 : 1;
+      flex.current += (flex.target - flex.current) * delta * 4;
+    });
 
     // Animate each muscle
     muscleMeshMap.forEach((meshes, muscleId) => {
       const state = muscleStateRef.current.get(muscleId);
       if (!state) return;
-      
+
       const isSelected = selectedMuscle?.id === muscleId;
       const isHovered = hoveredMuscle === muscleId;
-      const highlight = highlights.find(h => h.muscleId === muscleId);
-      
+      const highlight = levelFor.get(muscleId);
+
       // Determine effective target color (hover/selection takes priority)
       let effectiveTargetColor = state.targetColor;
       let effectiveTargetIntensity = state.targetEmissiveIntensity;
-      
+
       if (isHovered || isSelected) {
         effectiveTargetColor = state.targetColor.clone();
         effectiveTargetIntensity = 0.3;
       }
-      
+
       // Pulse effect for primary muscles
-      if (highlight?.level === 'primary' && !isHovered && !isSelected) {
+      if (highlight === 'primary' && !isHovered && !isSelected) {
         const pulse = Math.sin(time * 3) * 0.1 + 0.3;
         effectiveTargetIntensity = pulse;
       }
@@ -250,14 +332,29 @@ function LoadedModel({ gltf }: { gltf: any }) {
       state.currentColor.lerp(effectiveTargetColor, delta * 5);
       state.currentEmissiveIntensity += (effectiveTargetIntensity - state.currentEmissiveIntensity) * delta * 5;
 
+      // Muscle pump (flex) — thickness pulses in rep rhythm
+      const flex = flexStateRef.current.get(muscleId);
+      const pumpAmount = flex
+        ? flex.current * PUMP_STRENGTH[flex.level] * (0.45 + 0.55 * rhythm)
+        : 0;
+
       // Apply to all meshes for this muscle
       meshes.forEach(mesh => {
         const material = mesh.material as THREE.MeshStandardMaterial;
         if (!material) return;
-        
+
         material.color.copy(state.currentColor);
         material.emissiveIntensity = state.currentEmissiveIntensity;
         material.emissive.copy(state.currentEmissiveIntensity > 0 ? state.currentColor : new THREE.Color('#000000'));
+
+        // Scale the pivot wrapper (thicken the two short axes)
+        const wrapper = flexWrapperByMeshRef.current.get(mesh.uuid);
+        if (wrapper && pumpAmount > 0.001) {
+          const { x, y, z } = wrapper.userData.pumpAxes;
+          wrapper.scale.set(1 + pumpAmount * x, 1 + pumpAmount * y, 1 + pumpAmount * z);
+        } else if (wrapper) {
+          wrapper.scale.setScalar(1);
+        }
       });
     });
   });
