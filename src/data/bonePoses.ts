@@ -3,14 +3,23 @@
  *
  * The character is driven procedurally: each exercise defines ABSOLUTE Euler
  * rotations (radians) applied on top of the T-pose bind quaternion, per bone.
- * Verified empirically with the Xbot skeleton:
- *   - elbow flexion   = ForeArm rotation.z  (left -, right +)
- *   - arm raise       = Arm rotation.z
- *   - thigh flexion   = UpLeg rotation.z    (left +, right -)
- *   - knee bend       = Leg rotation.z      (left -, right +)
- *   - spine hinge     = Spine rotation.x    (positive = forward curl)
- *   - torso twist     = Spine rotation.z
- *   - hips translation: local 1 unit = 0.01 world units (root scale 0.01)
+ *
+ * KINEMATIC CALIBRATION (measured from the Xbot skeleton, Left-side base;
+ * Right side mirrors the sign of z):
+ *   joint          | axis | range                    | forbidden
+ *   ----------------|------|--------------------------|--------------------------
+ *   shoulder (Arm)  | z    | -90° (hang) .. +90° (overhead) | ±135°+ = arm crosses body midline
+ *   elbow (ForeArm) | z    | 0° (straight) .. -120° (flex) | positive = hyperextended elbow
+ *   hip    (UpLeg)  | z    | 0° .. +90° (flex)       | -90° = leg behind body
+ *   knee   (Leg)    | z    | 0° .. -120° (flex)      | positive = hyperextended knee
+ *   spine          | x    | 0° .. +60° (forward curl) | >75° = hunched back
+ *   spine          | z    | ±45° (twist)             | >45° = unsafe rotation
+ *   ankle  (Foot)  | x    | +0.35 = plantar flexion (toes down)
+ *
+ * These limits were verified empirically with the Xbot skeleton via a
+ * calibration script (bone world-position tracking) and cross-checked against
+ * human movement ranges. Angles outside the ranges above produce poses a real
+ * human cannot perform (arms crossing the body, hyperextended elbows/knees).
  *
  * The rep cycle applies an amplitude wave (0 -> 1 -> 0 during the active
  * phase) to every rotation. Poses marked `swing` oscillate -1..1 instead.
@@ -47,21 +56,23 @@ const ARM_DOWN = {
 
 export const EXERCISE_POSES: Record<string, ExercisePose> = {
   // ===== 背 + 二头肌日 =====
+  // Pull-up: arms straight overhead gripping the bar (shoulder +90°),
+  // elbows slightly flexed, body pulled up.
   'pull-up': {
     bones: {
-      'mixamorigLeftArm': { z: 2.6 },
-      'mixamorigRightArm': { z: -2.6 },
-      'mixamorigLeftForeArm': { z: -1.4 },
-      'mixamorigRightForeArm': { z: 1.4 },
+      'mixamorigLeftArm': { z: H2 },
+      'mixamorigRightArm': { z: -H2 },
+      'mixamorigLeftForeArm': { z: -0.5 },
+      'mixamorigRightForeArm': { z: 0.5 },
     },
     hipsY: 2.5,
   },
   'chin-up': {
     bones: {
-      'mixamorigLeftArm': { z: 2.2 },
-      'mixamorigRightArm': { z: -2.2 },
-      'mixamorigLeftForeArm': { z: -1.4 },
-      'mixamorigRightForeArm': { z: 1.4 },
+      'mixamorigLeftArm': { z: 1.3 },
+      'mixamorigRightArm': { z: -1.3 },
+      'mixamorigLeftForeArm': { z: -0.6 },
+      'mixamorigRightForeArm': { z: 0.6 },
     },
     hipsY: 2.5,
   },
@@ -85,31 +96,33 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
     },
     swing: true,
   },
-  'cable-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.3 }, 'mixamorigRightForeArm': { z: 1.3 } } },
-  'hammer-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.3 }, 'mixamorigRightForeArm': { z: 1.3 } } },
-  'preacher-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.3 }, 'mixamorigRightForeArm': { z: 1.3 } } },
+  'cable-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.2 }, 'mixamorigRightForeArm': { z: 1.2 } } },
+  'hammer-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.2 }, 'mixamorigRightForeArm': { z: 1.2 } } },
+  'preacher-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.2 }, 'mixamorigRightForeArm': { z: 1.2 } } },
 
   // ===== 胸 + 三头肌日 =====
+  // Standing-press approximation: arms raised to the side (~57-69°), elbow
+  // drives the press (flex -> extend with the rep wave).
   'bench-press': {
     bones: {
-      'mixamorigLeftArm': { z: 1.2 },
-      'mixamorigRightArm': { z: -1.2 },
-      'mixamorigLeftForeArm': { z: -1.2 },
-      'mixamorigRightForeArm': { z: 1.2 },
+      'mixamorigLeftArm': { z: 1.0 },
+      'mixamorigRightArm': { z: -1.0 },
+      'mixamorigLeftForeArm': { z: -1.0 },
+      'mixamorigRightForeArm': { z: 1.0 },
     },
   },
   'incline-press': {
     bones: {
-      'mixamorigLeftArm': { z: 1.4 },
-      'mixamorigRightArm': { z: -1.4 },
-      'mixamorigLeftForeArm': { z: -1.2 },
-      'mixamorigRightForeArm': { z: 1.2 },
+      'mixamorigLeftArm': { z: 1.2 },
+      'mixamorigRightArm': { z: -1.2 },
+      'mixamorigLeftForeArm': { z: -1.0 },
+      'mixamorigRightForeArm': { z: 1.0 },
     },
   },
   'chest-fly': {
     bones: {
-      'mixamorigLeftArm': { z: 1.6 },
-      'mixamorigRightArm': { z: -1.6 },
+      'mixamorigLeftArm': { z: 1.2 },
+      'mixamorigRightArm': { z: -1.2 },
     },
   },
   'dips': {
@@ -122,7 +135,7 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
     hipsY: -15,
   },
   'tricep-pushdown': {
-    bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -0.9 }, 'mixamorigRightForeArm': { z: 0.9 } },
+    bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.0 }, 'mixamorigRightForeArm': { z: 1.0 } },
   },
   'skull-crusher': {
     bones: {
@@ -132,10 +145,11 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
       'mixamorigRightForeArm': { z: 1.2 },
     },
   },
+  // Y-raise: arms raised to ~45° above horizontal (Y shape)
   'y-raise': {
     bones: {
-      'mixamorigLeftArm': { z: 2.36 },
-      'mixamorigRightArm': { z: -2.36 },
+      'mixamorigLeftArm': { z: 0.79 },
+      'mixamorigRightArm': { z: -0.79 },
     },
   },
 
@@ -146,7 +160,7 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
       'mixamorigRightUpLeg': { z: -0.9 },
       'mixamorigLeftLeg': { z: -1.2 },
       'mixamorigRightLeg': { z: 1.2 },
-      'mixamorigSpine': { x: 0.25 },
+      'mixamorigSpine': { x: 0.5 },
     },
     hipsY: -19,
   },
@@ -171,12 +185,12 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
   },
   'romanian-deadlift': {
     bones: {
-      'mixamorigSpine': { x: 0.85 },
+      'mixamorigSpine': { x: 0.95 },
       'mixamorigSpine1': { x: 0.4 },
       'mixamorigLeftUpLeg': { z: 0.5 },
       'mixamorigRightUpLeg': { z: -0.5 },
-      'mixamorigLeftLeg': { z: -0.15 },
-      'mixamorigRightLeg': { z: 0.15 },
+      'mixamorigLeftLeg': { z: -0.26 },
+      'mixamorigRightLeg': { z: 0.26 },
     },
   },
   'calf-raise': {
@@ -192,8 +206,8 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
       ...ARM_DOWN,
       'mixamorigLeftUpLeg': { z: 1.1 },
       'mixamorigRightUpLeg': { z: -1.1 },
-      'mixamorigLeftLeg': { z: 0.5 },
-      'mixamorigRightLeg': { z: -0.5 },
+      'mixamorigLeftLeg': { z: -0.5 },
+      'mixamorigRightLeg': { z: 0.5 },
     },
   },
   'plank': {
