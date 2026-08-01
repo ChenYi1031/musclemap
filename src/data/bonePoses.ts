@@ -56,43 +56,46 @@ const ARM_DOWN = {
 
 export const EXERCISE_POSES: Record<string, ExercisePose> = {
   // ===== 背 + 二头肌日 =====
-  // Pull-up: arms straight overhead gripping the bar (shoulder +90°),
-  // elbows slightly flexed, body pulled up.
+  // Pull-up: arms slightly wider than shoulder (~75°, not fully vertical —
+  // fully overhead reads as "arms raised" rather than gripping a bar), elbows
+  // pulling down, chest toward bar (spine lean).
   'pull-up': {
     bones: {
-      'mixamorigLeftArm': { z: H2 },
-      'mixamorigRightArm': { z: -H2 },
+      'mixamorigLeftArm': { z: 1.3 },
+      'mixamorigRightArm': { z: -1.3 },
       'mixamorigLeftForeArm': { z: -0.5 },
       'mixamorigRightForeArm': { z: 0.5 },
+      'mixamorigSpine': { x: 0.35 },
     },
     hipsY: 2.5,
   },
   'chin-up': {
     bones: {
-      'mixamorigLeftArm': { z: 1.3 },
-      'mixamorigRightArm': { z: -1.3 },
-      'mixamorigLeftForeArm': { z: -0.6 },
-      'mixamorigRightForeArm': { z: 0.6 },
+      'mixamorigLeftArm': { z: 1.13 },
+      'mixamorigRightArm': { z: -1.13 },
+      'mixamorigLeftForeArm': { z: -0.7 },
+      'mixamorigRightForeArm': { z: 0.7 },
+      'mixamorigSpine': { x: 0.26 },
     },
     hipsY: 2.5,
   },
   'barbell-row': {
     bones: {
-      'mixamorigSpine': { x: 0.7 },
-      'mixamorigSpine1': { x: 0.35 },
-      'mixamorigLeftUpLeg': { z: 0.5 },
-      'mixamorigRightUpLeg': { z: -0.5 },
-      'mixamorigLeftForeArm': { z: -1.0 },
-      'mixamorigRightForeArm': { z: 1.0 },
+      'mixamorigSpine': { x: 0.45 },
+      'mixamorigSpine1': { x: 0.2 },
+      'mixamorigLeftUpLeg': { z: 0.7 },
+      'mixamorigRightUpLeg': { z: -0.7 },
+      'mixamorigLeftForeArm': { z: -1.1 },
+      'mixamorigRightForeArm': { z: 1.1 },
     },
   },
   'dumbbell-row': {
     bones: {
-      'mixamorigSpine': { x: 0.6 },
-      'mixamorigLeftUpLeg': { z: 0.45 },
-      'mixamorigRightUpLeg': { z: -0.45 },
-      'mixamorigLeftForeArm': { z: -1.0 },
-      'mixamorigRightForeArm': { z: 1.0 },
+      'mixamorigSpine': { x: 0.5 },
+      'mixamorigLeftUpLeg': { z: 0.7 },
+      'mixamorigRightUpLeg': { z: -0.7 },
+      'mixamorigLeftForeArm': { z: -1.2 },
+      'mixamorigRightForeArm': { z: 1.2 },
     },
     swing: true,
   },
@@ -101,41 +104,45 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
   'preacher-curl': { bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.2 }, 'mixamorigRightForeArm': { z: 1.2 } } },
 
   // ===== 胸 + 三头肌日 =====
-  // Standing-press approximation: arms raised to the side (~57-69°), elbow
-  // drives the press (flex -> extend with the rep wave).
+  // Standing-press approximation: arms at ~46-57°, elbows flexed more so the
+  // forearms are near-vertical (bar-grip look), elbow extends with the rep.
   'bench-press': {
     bones: {
-      'mixamorigLeftArm': { z: 1.0 },
-      'mixamorigRightArm': { z: -1.0 },
-      'mixamorigLeftForeArm': { z: -1.0 },
-      'mixamorigRightForeArm': { z: 1.0 },
+      'mixamorigLeftArm': { z: 0.8 },
+      'mixamorigRightArm': { z: -0.8 },
+      'mixamorigLeftForeArm': { z: -1.2 },
+      'mixamorigRightForeArm': { z: 1.2 },
     },
   },
   'incline-press': {
     bones: {
-      'mixamorigLeftArm': { z: 1.2 },
-      'mixamorigRightArm': { z: -1.2 },
-      'mixamorigLeftForeArm': { z: -1.0 },
-      'mixamorigRightForeArm': { z: 1.0 },
+      'mixamorigLeftArm': { z: 1.0 },
+      'mixamorigRightArm': { z: -1.0 },
+      'mixamorigLeftForeArm': { z: -1.2 },
+      'mixamorigRightForeArm': { z: 1.2 },
     },
   },
+  // Chest fly: arms wide, elbows slightly bent (holding dumbbells)
   'chest-fly': {
     bones: {
       'mixamorigLeftArm': { z: 1.2 },
       'mixamorigRightArm': { z: -1.2 },
+      'mixamorigLeftForeArm': { z: -0.26 },
+      'mixamorigRightForeArm': { z: 0.26 },
     },
   },
   'dips': {
     bones: {
-      'mixamorigLeftArm': { z: 1.0 },
-      'mixamorigRightArm': { z: -1.0 },
-      'mixamorigLeftForeArm': { z: -1.0 },
-      'mixamorigRightForeArm': { z: 1.0 },
+      'mixamorigLeftArm': { z: 0.8 },
+      'mixamorigRightArm': { z: -0.8 },
+      'mixamorigLeftForeArm': { z: -1.2 },
+      'mixamorigRightForeArm': { z: 1.2 },
+      'mixamorigSpine': { x: 0.26 },
     },
     hipsY: -15,
   },
   'tricep-pushdown': {
-    bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.0 }, 'mixamorigRightForeArm': { z: 1.0 } },
+    bones: { ...ARM_DOWN, 'mixamorigLeftForeArm': { z: -1.1 }, 'mixamorigRightForeArm': { z: 1.1 } },
   },
   'skull-crusher': {
     bones: {
@@ -156,39 +163,42 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
   // ===== 腿 + 核心日 =====
   'squat': {
     bones: {
-      'mixamorigLeftUpLeg': { z: 0.9 },
-      'mixamorigRightUpLeg': { z: -0.9 },
-      'mixamorigLeftLeg': { z: -1.2 },
-      'mixamorigRightLeg': { z: 1.2 },
-      'mixamorigSpine': { x: 0.5 },
+      'mixamorigLeftUpLeg': { z: 1.0 },
+      'mixamorigRightUpLeg': { z: -1.0 },
+      'mixamorigLeftLeg': { z: -1.4 },
+      'mixamorigRightLeg': { z: 1.4 },
+      'mixamorigSpine': { x: 0.44 },
     },
     hipsY: -19,
   },
+  // Leg press: hips and knees fold deeply (~63°/86°)
   'leg-press': {
     bones: {
-      'mixamorigLeftUpLeg': { z: 0.8 },
-      'mixamorigRightUpLeg': { z: -0.8 },
-      'mixamorigLeftLeg': { z: -1.1 },
-      'mixamorigRightLeg': { z: 1.1 },
+      'mixamorigLeftUpLeg': { z: 1.1 },
+      'mixamorigRightUpLeg': { z: -1.1 },
+      'mixamorigLeftLeg': { z: -1.5 },
+      'mixamorigRightLeg': { z: 1.5 },
     },
     hipsY: -10,
   },
   'lunges': {
     bones: {
-      'mixamorigLeftUpLeg': { z: 0.7 },
-      'mixamorigRightUpLeg': { z: -0.7 },
-      'mixamorigLeftLeg': { z: -1.2 },
-      'mixamorigRightLeg': { z: 1.2 },
+      'mixamorigLeftUpLeg': { z: 0.9 },
+      'mixamorigRightUpLeg': { z: -0.9 },
+      'mixamorigLeftLeg': { z: -1.4 },
+      'mixamorigRightLeg': { z: 1.4 },
+      'mixamorigSpine': { x: 0.26 },
     },
     hipsY: -15,
     swing: true,
   },
+  // Romanian deadlift: big hip hinge (~57°), back kept straight (spine ~29°)
   'romanian-deadlift': {
     bones: {
-      'mixamorigSpine': { x: 0.95 },
-      'mixamorigSpine1': { x: 0.4 },
-      'mixamorigLeftUpLeg': { z: 0.5 },
-      'mixamorigRightUpLeg': { z: -0.5 },
+      'mixamorigSpine': { x: 0.5 },
+      'mixamorigSpine1': { x: 0.2 },
+      'mixamorigLeftUpLeg': { z: 1.0 },
+      'mixamorigRightUpLeg': { z: -1.0 },
       'mixamorigLeftLeg': { z: -0.26 },
       'mixamorigRightLeg': { z: 0.26 },
     },
@@ -201,38 +211,54 @@ export const EXERCISE_POSES: Record<string, ExercisePose> = {
     },
     hipsY: 15,
   },
+  // Hanging leg raise: hanging from arms (overhead), legs raised ~80° hip / 40° knee
   'hanging-leg-raise': {
     bones: {
-      ...ARM_DOWN,
-      'mixamorigLeftUpLeg': { z: 1.1 },
-      'mixamorigRightUpLeg': { z: -1.1 },
-      'mixamorigLeftLeg': { z: -0.5 },
-      'mixamorigRightLeg': { z: 0.5 },
+      'mixamorigLeftArm': { z: 1.4 },
+      'mixamorigRightArm': { z: -1.4 },
+      'mixamorigLeftUpLeg': { z: 1.4 },
+      'mixamorigRightUpLeg': { z: -1.4 },
+      'mixamorigLeftLeg': { z: -0.7 },
+      'mixamorigRightLeg': { z: 0.7 },
     },
   },
+  // Plank: straight body (spine 0°), arms forward supporting (~34°), NOT leaning back
   'plank': {
     bones: {
-      'mixamorigLeftArm': { z: -0.4 },
-      'mixamorigRightArm': { z: 0.4 },
-      'mixamorigSpine': { x: -0.3 },
+      'mixamorigLeftArm': { z: -0.6 },
+      'mixamorigRightArm': { z: 0.6 },
+      'mixamorigLeftForeArm': { z: -0.9 },
+      'mixamorigRightForeArm': { z: 0.9 },
+      'mixamorigSpine': { x: 0 },
     },
   },
+  // Russian twist: seated-ish (hips + knees flexed), torso twist ≤35°
   'russian-twist': {
     bones: {
-      'mixamorigSpine': { z: 0.5 },
+      'mixamorigLeftUpLeg': { z: 1.1 },
+      'mixamorigRightUpLeg': { z: -1.1 },
+      'mixamorigLeftLeg': { z: -1.0 },
+      'mixamorigRightLeg': { z: 1.0 },
+      'mixamorigSpine': { z: 0.6 },
       'mixamorigSpine1': { z: 0.4 },
       ...ARM_DOWN,
     },
     swing: true,
   },
+  // Crunch: seated-curl feel — hips/knees flexed (legs up), spine curls forward
   'crunch': {
     bones: {
+      'mixamorigLeftUpLeg': { z: 0.8 },
+      'mixamorigRightUpLeg': { z: -0.8 },
+      'mixamorigLeftLeg': { z: -1.4 },
+      'mixamorigRightLeg': { z: 1.4 },
       'mixamorigSpine': { x: 0.45 },
       'mixamorigSpine1': { x: 0.4 },
       'mixamorigSpine2': { x: 0.35 },
       'mixamorigNeck': { x: 0.2 },
       ...ARM_DOWN,
     },
+    hipsY: -8,
   },
 };
 
