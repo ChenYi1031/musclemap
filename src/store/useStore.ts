@@ -20,6 +20,9 @@ interface AppState {
   setPreviewMode: (enabled: boolean) => void;
   togglePreviewMode: () => void;
 
+  previewHint: string | null;
+  setPreviewHint: (hint: string | null) => void;
+
   highlights: MuscleHighlight[];
   setHighlights: (highlights: MuscleHighlight[]) => void;
 
@@ -50,6 +53,9 @@ export const useStore = create<AppState>((set) => ({
   previewMode: false,
   setPreviewMode: (enabled) => set({ previewMode: enabled }),
   togglePreviewMode: () => set((state) => ({ previewMode: !state.previewMode })),
+
+  previewHint: null,
+  setPreviewHint: (hint) => set({ previewHint: hint }),
 
   highlights: [],
   setHighlights: (highlights) => set({ highlights }),

@@ -3,25 +3,26 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '../store/useStore';
+import { exercises } from '../data/exercises';
+import { getExerciseMotion } from '../data/exerciseMotions';
+import { getRepRhythm, SMOOTH_FAST } from '../utils/repRhythm';
 import { STANDING_POSE, getExercisePose, ExercisePose, BoneDelta } from '../data/bonePoses';
 
 // Path to the rigged character (Mixamo-style skeleton)
 const XBOT_PATH = '/models/xbot.glb';
 
-// Model renders ~1.55 units tall at scale 1 (skinned-mesh bound). 
-// Calibrated via pixel measurement: scale 2.0 + offset 0.3 centers the
-// character at ~80% of the viewport height (canvas 1536x930, camera z=5).
+// The skinned mesh renders ~1.55 units tall at scale 1. Calibrated via WebGL
+// pixel measurement: scale 2.0 + offset 0.3 centers the character at ~80% of
+// the viewport height (canvas 1536x930, camera z=5). Bone local 1 unit =
+// 0.01 world units (root scale 0.01) — pose `hipsY` values are local units.
 const SCALE = 2.0;
 const OFFSET_Y = 0.3;
-
-// Bone local 1 unit = 0.01 world units (root scale 0.01)
-const POS_TO_WORLD = 0.01;
 
 useGLTF.preload(XBOT_PATH);
 
 export function RiggedCharacter() {
   const groupRef = useRef<THREE.Group>(null);
-  const { viewMode, selectedExercises } = useStore();
+  const { viewMode, selectedExercises, setPreviewHint } = useStore();
 
   const gltf = useGLTF(XBOT_PATH);
 
@@ -55,17 +56,15 @@ export function RiggedCharacter() {
   const tmpQuat = useRef(new THREE.Quaternion());
   const targetQuat = useRef(new THREE.Quaternion());
 
-  useFrame((_, delta) => {
-    const time = Date.now() * 0.001;
+  useFrame((state, delta) => {
+    const time = state.clock.elapsedTime;
 
-    // Rep cycle with rest phase (same rhythm as the muscle model)
     const profile = getExercisePose(selectedExercises[0]);
-    const cycle01 = ((time * 1.0 * 2.6) % (Math.PI * 2)) / (Math.PI * 2);
-    const active = cycle01 < 0.55 ? 1 : 0;
-    const repT = Math.min(cycle01 / 0.55, 1);
-    const wave = Math.sin(repT * Math.PI);
+    // Reuse the muscle model's per-exercise speed so both modes move in sync
+    const speed = getExerciseMotion(selectedExercises[0]).speed;
+    const { active, repT, wave, rhythm, swingWave } = getRepRhythm(time, speed);
     // swing poses oscillate -1..1, normal poses 0..1
-    const amp = profile.swing ? Math.sin(repT * Math.PI * 2) : active * wave;
+    const amp = profile.swing ? swingWave : rhythm;
 
     // Determine the effective pose (standing rest when no exercise selected)
     const pose: ExercisePose = selectedExercises.length > 0
@@ -102,21 +101,32 @@ export function RiggedCharacter() {
       }
 
       // Smooth transition toward the target
-      current.slerp(targetQuat.current, delta * 5);
+      current.slerp(targetQuat.current, delta * SMOOTH_FAST);
       bone.quaternion.copy(current);
     });
 
     // Hips vertical offset
     const targetHipsY = (pose.hipsY || 0) * amp;
-    currentHipsYRef.current += (targetHipsY - currentHipsYRef.current) * delta * 5;
+    currentHipsYRef.current += (targetHipsY - currentHipsYRef.current) * delta * SMOOTH_FAST;
     if (hipsRef.current) {
       hipsRef.current.position.y = currentHipsYRef.current;
     }
   });
 
+  // Click feedback: the character has no muscle breakdown, so show a hint
+  // about the currently previewed exercise instead of opening a muscle panel.
+  const handleClick = () => {
+    const name = exercises.find(ex => ex.id === selectedExercises[0])?.name;
+    setPreviewHint(
+      name
+        ? `🎬 ${name} 动作演示中 — 切换左侧动作可更换姿势`
+        : '💡 请先在左侧选择一个训练动作'
+    );
+  };
+
   return (
     <group ref={groupRef} scale={SCALE} position={[0, OFFSET_Y, 0]}>
-      <primitive object={scene} />
+      <primitive object={scene} onClick={handleClick} />
     </group>
   );
 }

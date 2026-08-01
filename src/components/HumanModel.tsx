@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { muscles } from '../data/muscles';
 import { getExerciseMotion } from '../data/exerciseMotions';
+import { getRepRhythm, SMOOTH_FAST, SMOOTH_FLEX } from '../utils/repRhythm';
 import { useStore } from '../store/useStore';
 import { Muscle, HighlightLevel } from '../types';
 
@@ -263,8 +264,8 @@ function LoadedModel({ gltf }: { gltf: any }) {
   }, [highlights]);
 
   // Animate color transitions, muscle pump, and exercise motion
-  useFrame((_, delta) => {
-    const time = Date.now() * 0.001;
+  useFrame((state, delta) => {
+    const time = state.clock.elapsedTime;
 
     // Build a level lookup (primary > secondary > stabilizer already resolved upstream)
     const levelFor = new Map<string, HighlightLevel>();
@@ -280,14 +281,8 @@ function LoadedModel({ gltf }: { gltf: any }) {
     motion.rock += (profile.rock - motion.rock) * delta * 3;
     motion.speed += (profile.speed - motion.speed) * delta * 3;
 
-    // Rep cycle with a rest phase: the model moves for the first ~55% of the
-    // cycle (concentric + eccentric), then fully rests. Prevents constant
-    // shaking/jitter when nothing is selected or between reps.
-    const cycle01 = ((time * motion.speed * 2.6) % (Math.PI * 2)) / (Math.PI * 2);
-    const active = cycle01 < 0.55 ? 1 : 0;
-    const repT = Math.min(cycle01 / 0.55, 1);      // 0..1 during the active phase
-    const wave = Math.sin(repT * Math.PI);          // 0 -> 1 -> 0 (one rep)
-    const rhythm = active * wave;                   // 0..1, 0 during rest
+    // Rep cycle with a rest phase (shared with the rigged character)
+    const { active, repT, wave, rhythm, swingWave } = getRepRhythm(time, motion.speed);
 
     if (groupRef.current) {
       // Rotate model based on view mode
@@ -300,7 +295,7 @@ function LoadedModel({ gltf }: { gltf: any }) {
       // Exercise motion (rests fully between reps; idle is completely static)
       groupRef.current.position.y = -active * wave * motion.bob;
       groupRef.current.rotation.x = active * wave * motion.lean;
-      groupRef.current.rotation.z = active * Math.sin(repT * Math.PI * 2) * motion.rock;
+      groupRef.current.rotation.z = active * swingWave * motion.rock;
     }
 
     // Update flex activation targets from highlights
@@ -308,7 +303,7 @@ function LoadedModel({ gltf }: { gltf: any }) {
       const level = levelFor.get(muscleId) ?? 'none';
       flex.level = level;
       flex.target = level === 'none' ? 0 : 1;
-      flex.current += (flex.target - flex.current) * delta * 4;
+      flex.current += (flex.target - flex.current) * delta * SMOOTH_FLEX;
     });
 
     // Animate each muscle
@@ -336,8 +331,8 @@ function LoadedModel({ gltf }: { gltf: any }) {
       }
 
       // Smooth color transition
-      state.currentColor.lerp(effectiveTargetColor, delta * 5);
-      state.currentEmissiveIntensity += (effectiveTargetIntensity - state.currentEmissiveIntensity) * delta * 5;
+      state.currentColor.lerp(effectiveTargetColor, delta * SMOOTH_FAST);
+      state.currentEmissiveIntensity += (effectiveTargetIntensity - state.currentEmissiveIntensity) * delta * SMOOTH_FAST;
 
       // Muscle pump (flex) — thickness pulses in rep rhythm, relaxes fully between reps
       const flex = flexStateRef.current.get(muscleId);
@@ -405,29 +400,8 @@ function LoadedModel({ gltf }: { gltf: any }) {
   );
 }
 
-// Error boundary for GLB load failure
-function GlbErrorFallback() {
-  return (
-    <group>
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[1, 2, 0.5]} />
-        <meshStandardMaterial color="#C4956A" roughness={0.5} />
-      </mesh>
-      <mesh position={[0, 1.5, 0]}>
-        <sphereGeometry args={[0.3, 16, 16]} />
-        <meshStandardMaterial color="#C4956A" roughness={0.5} />
-      </mesh>
-    </group>
-  );
-}
-
 export function HumanModel() {
-  // Load GLB model - hooks must be called unconditionally
+  // useGLTF throws on load failure (handled by React Suspense / error boundary)
   const gltf = useGLTF(MODEL_PATH);
-
-  if (!gltf) {
-    return <GlbErrorFallback />;
-  }
-
   return <LoadedModel gltf={gltf} />;
 }

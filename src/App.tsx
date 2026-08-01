@@ -10,11 +10,20 @@ import { calculateHighlights } from './utils/highlights';
 
 function App() {
   const { selectedExercises, setHighlights, showMuscleInfo, previewMode, togglePreviewMode } = useStore();
+  const previewHint = useStore((s) => s.previewHint);
+  const setPreviewHint = useStore((s) => s.setPreviewHint);
 
   useEffect(() => {
     const highlights = calculateHighlights(selectedExercises, exercises);
     setHighlights(highlights);
   }, [selectedExercises, setHighlights]);
+
+  // Auto-dismiss the preview hint after a moment
+  useEffect(() => {
+    if (!previewHint) return;
+    const timer = setTimeout(() => setPreviewHint(null), 2500);
+    return () => clearTimeout(timer);
+  }, [previewHint, setPreviewHint]);
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -58,6 +67,12 @@ function App() {
       </div>
 
       {showMuscleInfo && <MuscleInfoPanel />}
+
+      {previewHint && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-white shadow-xl whitespace-nowrap">
+          {previewHint}
+        </div>
+      )}
 
       <footer className="h-10 px-6 flex items-center gap-6 border-t border-slate-700 text-sm">
         <div className="flex items-center gap-2">
